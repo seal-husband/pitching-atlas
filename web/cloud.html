@@ -124,13 +124,13 @@ function draw(keepCam){
   var c = (keepCam && el._fullLayout && el._fullLayout.scene) ? el._fullLayout.scene.camera : cam(S.view);
   var tr = D.types.map(function(t, k){
     return {type:"scatter3d", mode:"markers", name:JA[t] || t, x:X[k], y:Y[k], z:S.align ? VA[k] : V[k],
-            marker:{size:2, color:COL[t] || "#888888", opacity:.6},
+            marker:{size:1.6, color:COL[t] || "#888888", opacity:1},   /* opaque: WebGL then sorts by depth, not by trace order */
             hovertemplate:"<b>" + (JA[t] || t) + "</b><br>横 %{x:.1f} in　縦 %{y:.1f} in<br>%{z:.1f} mph<extra></extra>"};
   });
   tr.push(planeTrace());
   var L = {paper_bgcolor:"rgba(0,0,0,0)", margin:{l:0,r:0,t:0,b:0}, font:{family:tok("--sans"), color:tok("--ink")},
            legend:{orientation:"h", x:0, y:1, yanchor:"top", itemsizing:"constant", font:{size:12, color:tok("--ink")},
-                   bgcolor:"rgba(0,0,0,0)"},
+                   entrywidth:120, entrywidthmode:"pixels", bgcolor:"rgba(0,0,0,0)"},
            hoverlabel:{font:{family:tok("--sans")}},
            scene:{dragmode:"turntable", aspectmode:"manual", aspectratio:AR, camera:c,
                   xaxis:axis("横変化（in）← 腕側｜グラブ側 →", XR, 10), yaxis:axis("縦変化（in）", YR, 10),
