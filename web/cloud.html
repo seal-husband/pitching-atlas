@@ -1,0 +1,155 @@
+<title>2026年 全投球の雲</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@700&family=Noto+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.35.3/plotly.min.js"></script>
+<script src="cloud_data.js"></script>
+<style>
+/* layout: one wide plot under a short header; view and display controls in one row above it, notes below */
+:root{
+  --ground:#f2f4f6; --panel:#ffffff; --ink:#18202b; --muted:#5a6573; --rule:#d5dbe2; --grid:#dde2e8;
+  --accent:#b8372b; --accent-soft:#f3dcd8; --plane:#3d4652;
+  --serif:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+  --sans:"Noto Sans JP","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#11151b; --panel:#181d25; --ink:#e4e8ee; --muted:#96a0ad; --rule:#2c343f; --grid:#2a323c;
+    --accent:#ee7a6c; --accent-soft:#3a2220; --plane:#c3cad3; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#11151b; --panel:#181d25; --ink:#e4e8ee; --muted:#96a0ad; --rule:#2c343f; --grid:#2a323c;
+  --accent:#ee7a6c; --accent-soft:#3a2220; --plane:#c3cad3; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font:15px/1.7 var(--sans);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1240px;margin:0 auto;padding-block:32px 64px;padding-inline:16px;display:grid;gap:20px}
+header{display:grid;gap:12px}
+.eyebrow{font:500 12px/1 var(--mono);letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+h1{font:700 clamp(26px,4vw,38px)/1.3 var(--serif);margin:0;text-wrap:balance}
+p{margin:0;max-width:76ch}
+.muted{color:var(--muted)}
+.lede b{color:var(--ink);font-weight:500}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.controls{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center;background:var(--panel);border:1px solid var(--rule);padding:12px 16px}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--rule);background:var(--panel)}
+.seg button{font:500 13px/1 var(--sans);border:0;background:none;padding:10px 12px;color:var(--muted);cursor:pointer}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{color:var(--ink);background:var(--accent-soft)}
+.controls label{display:inline-flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
+.controls input{accent-color:var(--accent);width:16px;height:16px}
+.lab{font-size:13px;color:var(--muted)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.plot{background:var(--panel);border:1px solid var(--rule);height:min(78vh,720px);min-height:420px}
+.notes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule)}
+@media (max-width:760px){.notes{grid-template-columns:1fr}}
+.notes div{background:var(--panel);padding:12px 14px;font-size:13px;color:var(--muted);line-height:1.65;min-width:0}
+.notes b{display:block;color:var(--ink);font-weight:500;font-size:14px}
+.notes code{font-family:var(--mono);font-size:12px;color:var(--ink)}
+footer{font-size:12px;color:var(--muted);border-top:1px solid var(--rule);padding-top:14px}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">pitching-atlas · 2026年 MLB</div>
+  <h1>全投球の雲</h1>
+  <p class="lede muted">2026年レギュラーシーズンの投球から無作為に選んだ <b class="num" id="nball"></b> 球を、<b>横変化・縦変化・球速</b>の3次元に置いた。1点が1球、色は Baseball Savant の球種の色。左投手は左右を反転し、横変化はグラブ側を正にしてある。ドラッグで回し、「PP を真横から」を押すと、雲がほぼ一枚の平面に乗っているのが見える。</p>
+</header>
+
+<div class="controls">
+  <span class="lab">視点</span>
+  <div class="seg" role="group" aria-label="視点">
+    <button type="button" id="v-free" data-view="free" aria-pressed="true">斜めから</button>
+    <button type="button" id="v-front" data-view="front" aria-pressed="false">正面（Savant の変化量図）</button>
+    <button type="button" id="v-edge" data-view="edge" aria-pressed="false">PP を真横から</button>
+  </div>
+  <label><input type="checkbox" id="showPlane"> PP を表示</label>
+  <label><input type="checkbox" id="align"> 投手ごとの PP の高さを揃える</label>
+</div>
+
+<div class="plot" id="plot" role="img" aria-label="全投球の横変化・縦変化・球速の3次元散布図"></div>
+
+<div class="notes">
+  <div><b>Pitch Plane（PP）</b><code id="eq"></code><br>向き（係数）はどの投手もほぼ同じで、投手ごとに違うのは高さ C（腕の振りの強さ）だけ。表示している PP は C をリーグ中央の <span class="num" id="cmed"></span> mph にしたもの。</div>
+  <div><b>高さを揃える</b>各投手の球を、その投手の C とリーグ中央の差だけ上下にずらす。腕の強さの違いが消えて、平面が薄くなる。チェンジアップとスプリットは揃えたあとも平面の約3 mph 下に残る。</div>
+  <div><b>見方</b>凡例の球種を押すと表示を切り替えられる（ダブルクリックでその球種だけ）。点に触れると球種と値が出る。「正面」は球速の軸を手前に向けた、いつもの変化量図。</div>
+</div>
+
+<footer>データ：MLB Statcast（Baseball Savant）2026年レギュラーシーズン、400球以上の投手。縦変化は重力の影響を除いた変化量。コード：github.com/seal-husband/pitching-atlas（src/16_cloud_data.py）</footer>
+</div>
+
+<script>
+(function(){
+var D = window.CLOUD;
+var COL = {FF:"#D22D49",SI:"#FE9D00",FC:"#933F2C",FA:"#D22D49",SL:"#EEE716",ST:"#DDB33A",SV:"#93AFD4",
+           CU:"#00D1ED",KC:"#6236CD",CS:"#0068FF",CH:"#1DBE3A",FS:"#3BACAC",FO:"#55CCAB"};
+var JA = {FF:"フォーシーム",SI:"シンカー",FC:"カッター",FA:"速球（その他）",SL:"スライダー",ST:"スイーパー",SV:"スラーブ",
+          CU:"カーブ",KC:"ナックルカーブ",CS:"スローカーブ",CH:"チェンジアップ",FS:"スプリット",FO:"フォーク"};
+var XR = [-24, 24], YR = [-24, 24], ZR = [62, 106];
+var AR = (function(){ var a = [XR[1]-XR[0], YR[1]-YR[0], (ZR[1]-ZR[0])*D.s], m = Math.max.apply(null, a);
+                      return {x:a[0]/m, y:a[1]/m, z:a[2]/m}; })();
+var R = 1.9;
+var UP = {free:{x:0,y:0,z:1}, front:{x:0,y:1,z:0}, edge:{x:0,y:0,z:1}};
+var S = {view:"free", plane:false, align:false};
+function tok(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function cam(v){ var e = D.cam[v]; return {eye:{x:R*e[0], y:R*e[1], z:R*e[2]}, up:UP[v], center:{x:0,y:0,z:0},
+                                          projection:{type:"orthographic"}}; }
+
+document.getElementById("nball").textContent = D.n.toLocaleString("ja-JP");
+document.getElementById("cmed").textContent = D.cmed.toFixed(1);
+document.getElementById("eq").textContent = "球速 ≒ " + D.A.toFixed(3) + "×縦 − " + (-D.B).toFixed(3) + "×横 + C";
+
+/* one trace per pitch type, in the data's type order */
+var idx = D.types.map(function(){ return []; });
+D.t.forEach(function(k, i){ idx[k].push(i); });
+function pick(arr, ii){ return ii.map(function(i){ return arr[i]; }); }
+var X = idx.map(function(ii){ return pick(D.x, ii); }), Y = idx.map(function(ii){ return pick(D.y, ii); });
+var V = idx.map(function(ii){ return pick(D.v, ii); }), VA = idx.map(function(ii){ return pick(D.va, ii); });
+
+function planeTrace(){
+  var g = [-20, 20], z = g.map(function(y){ return g.map(function(x){ return D.A*y + D.B*x + D.cmed; }); });
+  var c = tok("--plane");
+  return {type:"surface", x:g, y:g, z:z, opacity:.35, showscale:false, hoverinfo:"skip", name:"PP",
+          colorscale:[[0,c],[1,c]], showlegend:false, visible:S.plane, lighting:{ambient:1, diffuse:0, specular:0}};
+}
+function axis(title, range, dtick){
+  return {title:{text:title, font:{size:12, color:tok("--muted")}}, range:range, dtick:dtick,
+          color:tok("--muted"), gridcolor:tok("--grid"), zerolinecolor:tok("--rule"), backgroundcolor:tok("--panel"),
+          showbackground:true, tickfont:{size:11, family:tok("--mono")}};
+}
+function draw(keepCam){
+  var el = document.getElementById("plot");
+  var c = (keepCam && el._fullLayout && el._fullLayout.scene) ? el._fullLayout.scene.camera : cam(S.view);
+  var tr = D.types.map(function(t, k){
+    return {type:"scatter3d", mode:"markers", name:JA[t] || t, x:X[k], y:Y[k], z:S.align ? VA[k] : V[k],
+            marker:{size:2, color:COL[t] || "#888888", opacity:.6},
+            hovertemplate:"<b>" + (JA[t] || t) + "</b><br>横 %{x:.1f} in　縦 %{y:.1f} in<br>%{z:.1f} mph<extra></extra>"};
+  });
+  tr.push(planeTrace());
+  var L = {paper_bgcolor:"rgba(0,0,0,0)", margin:{l:0,r:0,t:0,b:0}, font:{family:tok("--sans"), color:tok("--ink")},
+           legend:{orientation:"h", x:0, y:1, yanchor:"top", itemsizing:"constant", font:{size:12, color:tok("--ink")},
+                   bgcolor:"rgba(0,0,0,0)"},
+           hoverlabel:{font:{family:tok("--sans")}},
+           scene:{dragmode:"turntable", aspectmode:"manual", aspectratio:AR, camera:c,
+                  xaxis:axis("横変化（in）← 腕側｜グラブ側 →", XR, 10), yaxis:axis("縦変化（in）", YR, 10),
+                  zaxis:axis(S.align ? "球速（mph、PP の高さを揃えた）" : "球速（mph）", ZR, 10)}};
+  Plotly.react(el, tr, L, {displaylogo:false, responsive:true, modeBarButtonsToRemove:["toImage"]});
+}
+draw(false);
+
+document.querySelectorAll("[data-view]").forEach(function(b){
+  b.addEventListener("click", function(){
+    S.view = b.dataset.view;
+    document.querySelectorAll("[data-view]").forEach(function(o){ o.setAttribute("aria-pressed", o === b); });
+    Plotly.relayout("plot", {"scene.camera":cam(S.view)});
+  });
+});
+document.getElementById("showPlane").addEventListener("change", function(e){ S.plane = e.target.checked; draw(true); });
+document.getElementById("align").addEventListener("change", function(e){ S.align = e.target.checked; draw(true); });
+var mq = window.matchMedia("(prefers-color-scheme: dark)");
+if (mq.addEventListener) mq.addEventListener("change", function(){ draw(true); });
+new MutationObserver(function(){ draw(true); }).observe(document.documentElement, {attributes:true, attributeFilter:["data-theme"]});
+})();
+</script>

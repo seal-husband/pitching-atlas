@@ -13,7 +13,7 @@ STEPS = [
     ["01_pitch_plane.py"], ["02_plane_height.py"], ["03_stuff_standin.py"], ["04_pitch_table.py"],
     ["05_peaks.py"], ["06_valleys.py"], ["07_four_numbers.py"], ["08_map.py"], ["09_separation.py"],
     ["10_reliability.py"], ["11_map_vs_stuff.py"], ["12_stability.py"], ["13_projection_vs_raw.py"],
-    ["14_offplane_check.py"], ["15_note_figures.py"],
+    ["14_offplane_check.py"], ["15_note_figures.py"], ["16_cloud_data.py"],
 ]
 
 

@@ -81,7 +81,7 @@ pitching-atlas/
 ├── output/             中間結果と表（*.parquet, *.npz, *.csv。再生成できるので含めない）
 │   └── figures/        図（ファイル名の先頭はそれを描くスクリプトの番号）
 │       └── note/       note 記事用の4枚（15 が描く）
-└── web/                3D地図のページ（three.html）。データ three_data.js は 08 が書き出す（含めない）
+└── web/                ページ（three.html：投手の地図、cloud.html：全投球の雲）。データ *_data.js は 08・16 が書き出す（含めない）
 ```
 
 ```
@@ -101,6 +101,7 @@ src/12_stability.py        アームアングル・打者の左右・年をま�
 src/13_projection_vs_raw.py 変化量をそのまま使う地図と PP に投影した地図の比較
 src/14_offplane_check.py   CH/FS の遅さを落下に換算して地図に戻しても、地図はほぼ変わらない
 src/15_note_figures.py     note 記事の図4枚 → output/figures/note/
+src/16_cloud_data.py       図1の雲を回して見るページのデータ → web/cloud_data.js（web/cloud.html）
 src/common.py              共通の定数（対象の球種、400球以上、0.63 in/mph）
 src/fourparts.py           4つの数の計算（側はピーク単位、縦は上下どちらも）
 ```
@@ -122,12 +123,12 @@ python run_all.py                        # 全スクリプト（約7分）。pyt
 結果は 2026年3月18日〜9月27日（レギュラーシーズン全日程）、743,373球のデータで出している。
 00 はすでにあるファイルの最終日から追記するので、途中で止めても続きから取れる。
 
-3D地図（`web/three.html`）は、08 が `web/three_data.js` を書き出したあとで開く。
+ページ（`web/three.html`、`web/cloud.html`）は、08・16 がデータ（`web/*_data.js`）を書き出したあとで開く。
 ブラウザがローカルの JavaScript を読めるよう、`web/` で簡易サーバーを立てる。
 
 ```
 cd web
-python -m http.server 8000               # http://localhost:8000/three.html
+python -m http.server 8000               # http://localhost:8000/three.html、cloud.html
 ```
 
 ## データとライセンス
